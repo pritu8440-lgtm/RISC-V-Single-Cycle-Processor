@@ -381,10 +381,14 @@ RISC-V-Single-Cycle-Processor/
 ├── .gitignore
 │
 └── Simulation files
+```
+
 ---
 
 ## 👋 Author
 
 **Ritu Priya** — [RISC-V Single-Cycle Processor](https://github.com/pritu8440-lgtm/RISC-V-Single-Cycle-Processor)
+
+Designed and developed by **Ritu Priya** as a hands-on RTL implementation of a 32-bit RISC-V single-cycle processor using Verilog HDL, with emphasis on modular hardware design, datapath and control integration, simulation, and signal-level verification.
 
 ---
