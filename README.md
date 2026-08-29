@@ -4,11 +4,9 @@
 
 A modular RTL implementation of a 32-bit RISC-V single-cycle processor developed in Verilog HDL.
 
-This project focuses on designing and integrating the fundamental hardware blocks required to execute instructions through a complete single-cycle datapath.
+This project focuses on understanding and implementing a processor from fundamental hardware building blocks and integrating them into a complete instruction-execution datapath.
 
-The processor is built using a hierarchical RTL architecture consisting of the Program Counter, Instruction Memory, Register Set, Immediate Generator, ALU, Data Memory, multiplexers, and dedicated control logic.
-
-The design emphasizes modular hardware construction, clear datapath organization, control-path separation, and RTL-level functional verification.
+The design separates the **datapath** and **control logic** into modular RTL blocks, making instruction flow, data movement, control-signal generation, and processor behavior observable at the RTL level.
 
 ---
 
@@ -20,13 +18,15 @@ The processor follows the fundamental single-cycle instruction execution flow:
 
 Each instruction is processed within a single clock cycle.
 
-The processor is organized into three major functional sections:
+The processor is organized around the following major sections:
 
-- **Instruction Fetch Path**
-- **Core Datapath**
-- **Control Unit**
+- Instruction Fetch Path
+- Core Datapath
+- Control Unit
+- Instruction Memory
+- Data Memory
 
-The modular organization makes the internal operation of the processor observable during RTL simulation and simplifies debugging and functional verification.
+The modular organization allows individual hardware blocks to be developed, integrated, simulated, and verified independently before complete processor-level verification.
 
 ---
 
@@ -38,27 +38,27 @@ The top-level processor integrates the instruction-fetch logic, core datapath, c
 
 ![RISC-V Single-Cycle Processor](docs/images/single_cycle_top.png)
 
-The top-level design provides the clock and reset interface and connects the processor core with instruction and data memories.
+The top-level design provides the clock and reset interface and connects the processor core with the instruction and data memory interfaces.
 
 Important processor-level signals include:
 
-- ALU Output
-- Memory Write
-- Program Counter
-- Write Data
-- Instruction
 - Clock
 - Reset
+- Program Counter
+- Instruction
+- ALU Output
+- Memory Write
+- Write Data
 
 ---
 
-## Core Datapath
+## Core Data Path
 
-The core datapath is responsible for transferring and processing instruction and operand data through the processor.
+The core datapath is responsible for transferring, selecting, and processing instruction and operand data.
 
 ![Core Datapath](docs/images/core_datapath.png)
 
-The datapath contains the following major hardware blocks:
+The datapath contains the major hardware blocks required for instruction execution:
 
 - Program Counter (PC)
 - PC + 4 Logic
@@ -76,17 +76,23 @@ The datapath contains the following major hardware blocks:
 
 The current Program Counter provides the address used to access instruction memory.
 
-The fetched instruction is decoded to determine the source registers, destination register, immediate value, and required control signals.
+The fetched instruction is decoded to determine:
 
-The Register Set provides the source operands to the execution stage.
+- Source registers
+- Destination register
+- Immediate field
+- Instruction type
+- Required control signals
 
-Depending on the instruction, the ALU receives its second operand either from the register set or from the generated immediate value.
+The Register Set provides the source operands required by the instruction.
 
-The ALU performs the required arithmetic or logical operation.
+The Immediate Generator produces the appropriate immediate value from the instruction.
 
-For memory-access instructions, the ALU result is used as the data-memory address.
+Multiplexers select the required data paths according to the control signals.
 
-Finally, the Write-Back Multiplexer selects the appropriate result that is written back to the destination register.
+The ALU performs the selected arithmetic or logical operation. For memory-access instructions, the ALU result can also be used as the data-memory address.
+
+The Write-Back Multiplexer selects the appropriate result before it is written back to the destination register.
 
 ---
 
@@ -100,33 +106,31 @@ The main components are:
 - PC + 4 Logic
 - PC Target Generation
 - PC Selection Multiplexer
-- Instruction Memory
+- Instruction Memory Interface
 
 For normal sequential execution:
 
 **Next PC = PC + 4**
 
-For control-flow instructions, the PC Target logic generates an alternative target address.
+For control-flow instructions, the PC target logic provides an alternative target address.
 
-The PC selection logic determines which address becomes the next Program Counter value.
-
-This provides the required mechanism for sequential instruction execution as well as branch and jump operations.
+The PC selection logic determines which address is supplied to the Program Counter for the next instruction.
 
 ---
 
 ## Control Unit
 
-The Control Unit decodes the current instruction and generates the control signals required to configure the datapath.
+The control unit decodes the current instruction and generates the control signals required to configure the datapath.
 
 ![Control Unit](docs/images/control_unit.png)
 
 The control path is implemented using dedicated RTL blocks including:
 
+- Instruction Decoder
 - Main Decoder
 - ALU Decoder
-- Instruction Decoder
 
-The control logic determines operations such as:
+The control logic determines processor behavior through signals such as:
 
 - Register Write Enable
 - Memory Write Enable
@@ -137,7 +141,118 @@ The control logic determines operations such as:
 - Jump Control
 - Immediate Source Selection
 
-Separating the control logic from the datapath keeps the processor architecture modular and makes individual control decisions easier to analyze during simulation.
+Separating the control logic from the datapath keeps the processor architecture modular and makes individual control decisions easier to analyze during RTL simulation.
+
+---
+
+## RTL Design Philosophy
+
+The processor was developed using a **bottom-up RTL design methodology**.
+
+Instead of implementing the processor as one large hardware block, the design is decomposed into smaller functional RTL modules.
+
+Each module is responsible for a specific hardware function.
+
+### Modular Hardware Design
+
+The processor is constructed from independent functional blocks such as:
+
+- Program Counter
+- Register Set
+- ALU
+- Immediate Generator
+- Instruction Decoder
+- Main Decoder
+- ALU Decoder
+- Instruction Memory
+- Data Memory
+- Multiplexers
+
+This modular structure improves:
+
+- Readability
+- Debugging
+- Reusability
+- Functional Verification
+- Hierarchical Integration
+
+### Datapath and Control Separation
+
+The datapath is responsible for data movement and computation.
+
+The control unit generates the signals that configure the datapath for the current instruction.
+
+This separation makes the instruction-execution process easier to analyze at the RTL level.
+
+### Hierarchical Integration
+
+Individual RTL modules are connected hierarchically to construct the complete processor.
+
+This approach allows internal processor signals to be observed during simulation and makes functional issues easier to isolate.
+
+---
+
+## Instruction Execution Flow
+
+The processor executes instructions through the following logical sequence.
+
+### 1. Instruction Fetch
+
+The Program Counter provides the instruction address.
+
+The instruction memory returns the corresponding 32-bit instruction.
+
+The sequential address is generated using:
+
+**PC + 4**
+
+---
+
+### 2. Instruction Decode
+
+The instruction is decoded to determine:
+
+- Source register addresses
+- Destination register address
+- Immediate field
+- Instruction type
+- Required control signals
+
+---
+
+### 3. Operand Selection
+
+The Register Set provides the required source operands.
+
+The Immediate Generator produces the instruction-specific immediate value.
+
+Multiplexers select the appropriate operands for the ALU based on the generated control signals.
+
+---
+
+### 4. Execute
+
+The ALU performs the selected arithmetic or logical operation.
+
+The ALU operation is determined by the control signals generated by the control unit.
+
+The ALU also produces a Zero indication used by the control-flow logic where required.
+
+---
+
+### 5. Memory Access
+
+For memory-related instructions, the ALU output can be used as the memory address.
+
+The data memory performs the required read or write operation according to the memory control signals.
+
+---
+
+### 6. Write Back
+
+The Write-Back Multiplexer selects the value that should be written to the destination register.
+
+When register write is enabled, the selected result is written into the Register Set.
 
 ---
 
@@ -148,96 +263,6 @@ The integrated processor core combines the datapath and control logic into a com
 ![Single-Cycle Core](docs/images/single_cycle_core.png)
 
 The hierarchical implementation allows the major processor components to be individually inspected while also providing a complete processor-level structure.
-
-The processor core coordinates:
-
-**Instruction → Decode → Operand Selection → ALU Operation → Memory Access → Write Back**
-
----
-
-## RTL Design Philosophy
-
-The processor was developed using a **bottom-up RTL design methodology**.
-
-Instead of treating the processor as a single large hardware block, the design is decomposed into smaller functional modules.
-
-Each module has a specific hardware responsibility.
-
-### Modular Hardware Design
-
-Each processor function is implemented as a separate RTL block.
-
-This improves:
-
-- Readability
-- Debugging
-- Reusability
-- Functional Verification
-- Hierarchical Integration
-
-### Datapath and Control Separation
-
-The datapath is responsible for data movement and computation, while the Control Unit generates the signals that configure the datapath.
-
-This separation makes the instruction execution process easier to understand and verify at RTL level.
-
-### Hierarchical Integration
-
-Individual RTL modules are connected hierarchically to construct the complete processor.
-
-This allows internal processor behavior to be observed during simulation and makes debugging more systematic.
-
----
-
-## Instruction Execution Flow
-
-The processor executes an instruction through the following logical sequence.
-
-### 1. Instruction Fetch
-
-The Program Counter provides the instruction address.
-
-The Instruction Memory returns the corresponding 32-bit instruction.
-
-The sequential PC value is generated using:
-
-**PC + 4**
-
-### 2. Instruction Decode
-
-The instruction is decoded to determine:
-
-- Source Registers
-- Destination Register
-- Immediate Field
-- Instruction Type
-- Required Control Signals
-
-### 3. Operand Selection
-
-The Register Set provides the required source operands.
-
-The Immediate Generator produces the instruction-specific immediate value.
-
-Multiplexers select the appropriate operands for the ALU.
-
-### 4. Execute
-
-The ALU performs the selected arithmetic or logical operation.
-
-The ALU operation is determined by the control signals generated by the Control Unit.
-
-### 5. Memory Access
-
-For memory-related instructions, the ALU output is used as the memory address.
-
-The Data Memory performs the required read or write operation according to the memory control signal.
-
-### 6. Write Back
-
-The Write-Back Multiplexer selects the value that should be written to the destination register.
-
-The selected result is written into the Register Set when register write is enabled.
 
 ---
 
@@ -279,17 +304,18 @@ The RTL simulation waveform was inspected using GTKWave to verify processor beha
 
 ![GTKWave Verification Waveform](docs/images/waveform.png)
 
-The waveform provides visibility into the relationship between:
+The waveform provides signal-level visibility into the relationship between:
 
-- Clock Cycles
-- Instruction Addresses
-- Program Counter Updates
-- Instruction Values
-- Register Operations
-- ALU Operations
-- Memory Operations
-- Control Signals
-- Write-Back Behavior
+- Clock cycles
+- Program Counter updates
+- Instruction addresses
+- Instruction values
+- Register operations
+- Immediate values
+- ALU operations
+- Memory operations
+- Control signals
+- Write-back behavior
 
 Signal-level observation helps verify the interaction between individual RTL modules and the complete processor datapath.
 
@@ -297,15 +323,15 @@ Signal-level observation helps verify the interaction between individual RTL mod
 
 ## Hardware Demonstration
 
-The processor design is also documented with a hardware setup using the **Digilent Basys 3 FPGA development board**.
+The processor development workflow also includes a hardware-oriented FPGA environment using the **Digilent Basys 3 FPGA development board**.
 
-![Basys 3 Hardware Demonstration](docs/images/basys3-hardware.png)
+![Basys 3 Hardware Demonstration](docs/images/hardware.png)
 
-The hardware image documents the FPGA development environment used alongside the RTL design and simulation workflow.
+The hardware setup provides a practical FPGA development environment alongside the RTL design and simulation workflow.
 
-The project workflow therefore covers both:
+The overall development flow therefore covers:
 
-**RTL Design → Simulation → Waveform Verification → FPGA Hardware Environment**
+**RTL Design → Simulation → GTKWave Waveform Verification → FPGA Hardware Environment**
 
 ---
 
@@ -313,20 +339,19 @@ The project workflow therefore covers both:
 
 Verification was performed progressively during development.
 
-The general verification methodology was:
+The general methodology was:
 
 1. Implement individual RTL modules.
 2. Verify module-level behavior.
-3. Integrate the modules into the datapath.
-4. Integrate the Control Unit with the datapath.
+3. Integrate the modules into the core datapath.
+4. Integrate the control unit with the datapath.
 5. Connect instruction and data memory.
 6. Run the complete processor testbench.
 7. Inspect internal signals using GTKWave.
 8. Verify Program Counter progression.
-9. Verify ALU operations.
-10. Verify register activity.
-11. Verify memory behavior.
-12. Verify write-back behavior.
+9. Verify ALU operations and results.
+10. Verify register activity and write-back behavior.
+11. Verify memory-related control and data signals.
 
 This bottom-up verification approach helps isolate functional issues before complete processor integration.
 
@@ -344,18 +369,15 @@ RISC-V-Single-Cycle-Processor/
 │       ├── control_unit.png
 │       ├── single_cycle_core.png
 │       ├── waveform.png
-│       └── basys3-hardware.png
+│       └── hardware.png
+│
+├── rtl/
+│   └── Verilog RTL source files
+│
+├── tb/
+│   └── CPU testbench
 │
 ├── README.md
 ├── .gitignore
 │
-├── Verilog RTL source files
-├── CPU testbench
 └── Simulation files
----
-
-## 👋 Author
-
-**Ritu Priya** — [RISC-V Single-Cycle Processor](https://github.com/pritu8440-lgtm/RISC-V-Single-Cycle-Processor)
-
-Designed and developed by **Ritu Priya** as a hands-on RTL implementation of a 32-bit RISC-V single-cycle processor using Verilog HDL, with functional simulation and signal-level verification using GTKWave.
