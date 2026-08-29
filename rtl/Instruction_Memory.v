@@ -12,6 +12,10 @@ module Instruction_Memory (
     // Sample program for RTL simulation
     initial begin
 
+        //=====================================================
+        // Basic ALU / Memory / Branch Tests
+        //=====================================================
+
         // ADDI x1, x0, 5
         memory[0] = 32'h00500093;
 
@@ -42,17 +46,50 @@ module Instruction_Memory (
         // BEQ x1, x1, +8
         memory[9] = 32'h00108463;
 
+        // This instruction should be skipped
         // ADDI x9, x0, 1
         memory[10] = 32'h00100493;
 
         // ADDI x10, x0, 2
         memory[11] = 32'h00200513;
 
-        // Remaining locations contain NOP
+
+        //=====================================================
+        // LUI / AUIPC / JAL Tests
+        //=====================================================
+
+        // NOP
         memory[12] = 32'h00000013;
-        memory[13] = 32'h00000013;
-        memory[14] = 32'h00000013;
-        memory[15] = 32'h00000013;
+
+        // LUI x11, 0x12345
+        // x11 = 0x12345000
+        memory[13] = 32'h123455B7;
+
+        // AUIPC x12, 0x1
+        // PC = 0x38
+        // x12 = 0x38 + 0x1000
+        //     = 0x00001038
+        memory[14] = 32'h00001617;
+
+        // JAL x13, +8
+        // Current PC = 0x3C
+        // x13 should receive PC + 4 = 0x40
+        // Target PC = 0x44
+        memory[15] = 32'h008006EF;
+
+        // This instruction should be skipped by JAL
+        // ADDI x14, x0, 1
+        memory[16] = 32'h00100713;
+
+        // JAL target
+        // ADDI x15, x0, 2
+        memory[17] = 32'h00200793;
+
+        // NOP
+        memory[18] = 32'h00000013;
+
+        // NOP
+        memory[19] = 32'h00000013;
 
     end
 
