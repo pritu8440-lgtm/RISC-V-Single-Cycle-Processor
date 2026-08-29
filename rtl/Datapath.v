@@ -18,6 +18,7 @@
 //   LW
 //   SW
 //   BEQ
+//   JAL
 //   LUI
 //   AUIPC
 //=============================================================
@@ -28,6 +29,7 @@ module Datapath (
 
     input  wire [31:0] instruction,
     input  wire [31:0] pc,
+    input  wire [31:0] pc_plus_4,
 
     // Control signals
     input  wire        RegWrite,
@@ -35,10 +37,12 @@ module Datapath (
     input  wire        MemToReg,
     input  wire        ALUSrcA,
     input  wire        ALUSrc,
+    input  wire        Branch,
+    input  wire        Jump,
     input  wire [1:0]  ALUOp,
     input  wire [2:0]  ImmSrc,
 
-    // Outputs
+    // Datapath outputs
     output wire [31:0] alu_result,
     output wire [31:0] memory_data,
     output wire [31:0] write_back_data,
@@ -46,7 +50,7 @@ module Datapath (
 );
 
     //=========================================================
-    // Instruction Decoder
+    // Instruction fields
     //=========================================================
 
     wire [6:0] opcode;
@@ -125,10 +129,10 @@ module Datapath (
     wire [31:0] alu_input_b;
 
     ALU_MUX u_alu_mux (
-        .register_data   (read_data2),
-        .immediate       (immediate),
-        .select_immediate(ALUSrc),
-        .alu_input       (alu_input_b)
+        .register_data    (read_data2),
+        .immediate        (immediate),
+        .select_immediate (ALUSrc),
+        .alu_input        (alu_input_b)
     );
 
     //=========================================================
@@ -158,14 +162,6 @@ module Datapath (
 
     //=========================================================
     // Data Memory
-    //
-    // SW:
-    //   ALU result -> address
-    //   rs2        -> write data
-    //
-    // LW:
-    //   ALU result -> address
-    //   memory     -> memory_data
     //=========================================================
 
     Data_Memory u_data_memory (
@@ -177,16 +173,19 @@ module Datapath (
     );
 
     //=========================================================
-    // Write Back MUX
+    // Write Back
     //
-    // MemToReg = 0 -> ALU result
-    // MemToReg = 1 -> Memory data
+    // Normal instruction -> ALU result
+    // LW                  -> Memory data
+    // JAL                 -> PC + 4
     //=========================================================
 
     WriteBack_MUX u_writeback_mux (
         .alu_result     (alu_result),
         .memory_data    (memory_data),
+        .pc_plus_4      (pc_plus_4),
         .MemToReg       (MemToReg),
+        .Jal            (Jump),
         .write_back_data(write_back_data)
     );
 
